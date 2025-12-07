@@ -1,8 +1,17 @@
-const socket = io();
+// --- DEMO MODE (GitHub Pages) ---
+// Since we are hosted on GitHub Pages (static), we cannot connect to a real backend.
+// This script mocks the backend behavior for demonstration purposes.
+
+// Mock Socket.io
+const socket = { on: () => { }, emit: () => { } };
+
 let currentUser = null;
 let map = null;
 let markers = {};
-let userList = [];
+let userList = [
+    { id: 99, username: "DemoUser1", lat: 19.0760, lng: 72.8777, message: "Help needed!", last_active: Date.now() },
+    { id: 98, username: "PoliceBot", lat: 19.0800, lng: 72.8800, message: "On patrol", last_active: Date.now() }
+];
 
 // --- DOM Elements ---
 const loginScreen = document.getElementById('login-screen');
@@ -23,25 +32,30 @@ async function joinApp() {
         return;
     }
 
-    try {
-        const res = await fetch('/api/join', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username })
-        });
-        const data = await res.json();
+    // Mock API Call
+    console.log("Mocking /api/join for", username);
 
-        if (res.ok) {
-            currentUser = data;
-            loginScreen.classList.add('hidden');
-            appScreen.classList.remove('hidden');
-            initMap();
-        } else {
-            alert(data.error);
-        }
-    } catch (err) {
-        alert('Network error');
-    }
+    setTimeout(() => {
+        currentUser = {
+            id: Math.floor(Math.random() * 1000),
+            username: username,
+            lat: null,
+            lng: null,
+            message: "",
+            last_active: Date.now()
+        };
+
+        loginScreen.classList.add('hidden');
+        appScreen.classList.remove('hidden');
+
+        // Show Demo Alert
+        const demoBanner = document.createElement('div');
+        demoBanner.style = "background: #f39c12; color: #fff; padding: 10px; text-align: center; font-weight: bold;";
+        demoBanner.innerText = "⚠️ PROTOTYPE MODE: No live server connection (GitHub Pages is static). Data is local only.";
+        document.body.insertBefore(demoBanner, document.querySelector('header'));
+
+        initMap();
+    }, 500);
 }
 
 loginBtn.addEventListener('click', joinApp);
@@ -72,7 +86,7 @@ function initMap() {
         });
     }
 
-    // Poll for other users
+    // Poll for other users (Mocked)
     fetchUsers();
     setInterval(fetchUsers, 5000);
 }
@@ -81,137 +95,57 @@ function updatePosition(position) {
     const { latitude, longitude } = position.coords;
     const message = emergencyMessageInput.value;
 
-    console.log("=== UPDATE POSITION ===");
-    console.log("Latitude:", latitude);
-    console.log("Longitude:", longitude);
-    console.log("Message:", message);
-    console.log("User ID:", currentUser.id);
+    console.log("=== UPDATE POSITION (MOCK) ===");
 
-    // Update server
-    fetch('/api/update-location', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            userId: currentUser.id,
-            lat: latitude,
-            lng: longitude,
-            message: message
-        })
-    })
-        .then(response => response.json())
-        .then(data => {
-            console.log("Server response:", data);
-            if (data.user) {
-                // Update local user state with server data including last_active
-                currentUser.lat = data.user.lat;
-                currentUser.lng = data.user.lng;
-                currentUser.message = data.user.message;
-                currentUser.last_active = data.user.last_active;
-            }
-        })
-        .catch(err => {
-            console.error("Error updating location:", err);
-        });
+    // Update local state directly
+    if (currentUser) {
+        currentUser.lat = latitude;
+        currentUser.lng = longitude;
+        currentUser.message = message;
+        currentUser.last_active = Date.now();
 
-    // Ensure self marker exists/updates
-    updateMarker(currentUser);
+        updateMarker(currentUser);
+    }
 }
 
 // Update Message Button
 updateMsgBtn.addEventListener('click', () => {
-    console.log("Update button clicked");
     const originalText = updateMsgBtn.textContent;
     updateMsgBtn.textContent = "Updating...";
     updateMsgBtn.disabled = true;
 
     if (navigator.geolocation) {
-        console.log("Requesting position (high accuracy)...");
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                console.log("Position received");
                 updatePosition(position);
+                alert("Message updated! (Simulated)");
                 updateMsgBtn.textContent = originalText;
                 updateMsgBtn.disabled = false;
             },
             (err) => {
-                console.warn("High accuracy failed, trying low accuracy...", err);
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        console.log("Position received (low accuracy)");
-                        updatePosition(position);
-                        updateMsgBtn.textContent = originalText;
-                        updateMsgBtn.disabled = false;
-                    },
-                    (err2) => {
-                        console.warn("Geolocation failed, using last known position...", err2);
-                        // Use last known position if available
-                        if (currentUser.lat && currentUser.lng) {
-                            const message = emergencyMessageInput.value;
-                            console.log("Updating message with last known position");
-                            console.log("Message:", message);
-
-                            fetch('/api/update-location', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    userId: currentUser.id,
-                                    lat: currentUser.lat,
-                                    lng: currentUser.lng,
-                                    message: message
-                                })
-                            })
-                                .then(response => response.json())
-                                .then(data => {
-                                    console.log("Server response:", data);
-                                    if (data.user) {
-                                        currentUser.message = data.user.message;
-                                        currentUser.last_active = data.user.last_active;
-                                    }
-                                    updateMarker(currentUser);
-                                    alert("Message updated successfully!");
-                                    updateMsgBtn.textContent = originalText;
-                                    updateMsgBtn.disabled = false;
-                                })
-                                .catch(err => {
-                                    console.error("Error updating:", err);
-                                    alert("Error updating message: " + err.message);
-                                    updateMsgBtn.textContent = originalText;
-                                    updateMsgBtn.disabled = false;
-                                });
-                        } else {
-                            alert("Cannot get location. Please wait for initial location to be detected.");
-                            updateMsgBtn.textContent = originalText;
-                            updateMsgBtn.disabled = false;
-                        }
-                    },
-                    { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
-                );
-            },
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                alert("Could not get location.");
+                updateMsgBtn.textContent = originalText;
+                updateMsgBtn.disabled = false;
+            }
         );
     } else {
-        alert("Geolocation is not supported by your browser.");
-        updateMsgBtn.textContent = originalText;
-        updateMsgBtn.disabled = false;
+        alert("Geolocation not supported.");
     }
 });
 
 async function fetchUsers() {
-    try {
-        const res = await fetch('/api/users');
-        const users = await res.json();
-        userList = users;
-
-        console.log("Fetched users:", users); // Debug log
-
-        updateDistressList(users);
-
-        users.forEach(user => {
-            updateMarker(user);
-        });
-    } catch (err) {
-        console.error("Error fetching users:", err);
+    // Mock API: Return static list + current user
+    let displayList = [...userList];
+    if (currentUser && currentUser.lat) {
+        displayList.push(currentUser);
     }
+
+    console.log("Mock fetchUsers:", displayList);
+    updateDistressList(displayList);
+
+    displayList.forEach(user => {
+        updateMarker(user);
+    });
 }
 
 function updateMarker(user) {
@@ -243,8 +177,6 @@ function updateDistressList(users) {
         .filter(user => user.lat && user.lng) // Only include users with location
         .sort((a, b) => (b.last_active || 0) - (a.last_active || 0));
 
-    console.log("Sorted users:", sortedUsers); // Debug log
-
     sortedUsers.forEach(user => {
         const li = document.createElement('li');
         li.className = 'distress-item';
@@ -262,10 +194,3 @@ function updateDistressList(users) {
     });
 }
 
-// Socket Listeners (Optional for real-time, but polling covers it too)
-socket.on('location_update', (data) => {
-    // We can update the specific marker immediately
-    // But fetchUsers handles the list and everything comprehensively
-    // We'll let the polling/fetchUsers handle the main state to keep it simple and consistent
-    // Or we could optimize here. For now, rely on polling + fetchUsers.
-});
