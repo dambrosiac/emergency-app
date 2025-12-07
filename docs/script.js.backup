@@ -1,0 +1,162 @@
+const socket = io();
+let currentUser = null;
+let map = null;
+let markers = {};
+let currentChatUserId = null;
+
+// --- DOM Elements ---
+const loginOverlay = document.getElementById('login-overlay');
+const appContainer = document.getElementById('app-container');
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const loginBtn = document.getElementById('login-btn');
+const registerBtn = document.getElementById('register-btn');
+const loginError = document.getElementById('login-error');
+const chatModal = document.getElementById('chat-modal');
+const closeChatBtn = document.getElementById('close-chat');
+const chatMessages = document.getElementById('chat-messages');
+const messageInput = document.getElementById('message-input');
+const sendBtn = document.getElementById('send-btn');
+const chatWithUserTitle = document.getElementById('chat-with-user');
+
+// --- Auth Functions ---
+
+async function authenticate(endpoint) {
+    const username = usernameInput.value;
+    const password = passwordInput.value;
+
+    if (!username || !password) {
+        loginError.textContent = 'Please enter username and password';
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+            currentUser = data;
+            loginOverlay.classList.add('hidden');
+            appContainer.classList.remove('hidden');
+            initMap();
+            socket.emit('join', currentUser.id);
+        } else {
+            loginError.textContent = data.error;
+        }
+    } catch (err) {
+        loginError.textContent = 'Network error';
+    }
+}
+
+loginBtn.addEventListener('click', () => authenticate('login'));
+registerBtn.addEventListener('click', () => authenticate('register'));
+
+// --- Map Functions ---
+
+function initMap() {
+    // Default to Mumbai if geolocation fails
+    map = L.map('map').setView([19.0760, 72.8777], 13);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '©OpenStreetMap, ©CartoDB'
+    }).addTo(map);
+
+    if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(updatePosition, (err) => console.error(err), {
+            enableHighAccuracy: true
+        });
+    }
+
+    // Poll for other users
+    setInterval(fetchUsers, 5000);
+}
+
+function updatePosition(position) {
+    const { latitude, longitude } = position.coords;
+
+    // Update server
+    fetch('/api/update-location', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            userId: currentUser.id,
+            lat: latitude,
+            lng: longitude
+        })
+    });
+
+    // Center map on first load
+    // map.setView([latitude, longitude], 15);
+}
+
+async function fetchUsers() {
+    const res = await fetch('/api/users');
+    const users = await res.json();
+
+    users.forEach(user => {
+        if (user.id === currentUser.id) return; // Don't show self
+
+        if (markers[user.id]) {
+            markers[user.id].setLatLng([user.lat, user.lng]);
+        } else {
+            const marker = L.marker([user.lat, user.lng]).addTo(map);
+            marker.bindPopup(`
+                <b>${user.username}</b><br>
+                <button onclick="openChat(${user.id}, '${user.username}')">Chat</button>
+            `);
+            markers[user.id] = marker;
+        }
+    });
+}
+
+// --- Chat Functions ---
+
+window.openChat = (userId, username) => {
+    currentChatUserId = userId;
+    chatWithUserTitle.textContent = `Chat with ${username}`;
+    chatModal.classList.remove('hidden');
+    chatMessages.innerHTML = ''; // Clear previous chat
+};
+
+closeChatBtn.addEventListener('click', () => {
+    chatModal.classList.add('hidden');
+    currentChatUserId = null;
+});
+
+sendBtn.addEventListener('click', sendMessage);
+
+function sendMessage() {
+    const content = messageInput.value;
+    if (!content || !currentChatUserId) return;
+
+    socket.emit('send_message', {
+        senderId: currentUser.id,
+        receiverId: currentChatUserId,
+        content
+    });
+
+    appendMessage(content, 'sent');
+    messageInput.value = '';
+}
+
+function appendMessage(content, type) {
+    const div = document.createElement('div');
+    div.className = `message ${type}`;
+    div.textContent = content;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Socket Listeners
+socket.on('receive_message', (data) => {
+    if (currentChatUserId === data.senderId) {
+        appendMessage(data.content, 'received');
+    } else {
+        // Notification logic could go here
+        alert(`New message from User ${data.senderId}`);
+    }
+});

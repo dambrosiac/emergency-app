@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emergency Location Sharing</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <div id="attribution">Designed by Ambrose Rapose</div>
+
+    <div id="login-screen">
+        <div class="login-box">
+            <h2>Emergency Location Sharing</h2>
+            <input type="text" id="username" placeholder="Enter your name" />
+            <button id="login-btn">Join</button>
+        </div>
+    </div>
+
+    <div id="app-screen" class="hidden">
+        <div id="map"></div>
+        <div id="controls">
+            <input type="text" id="emergency-message" placeholder="Update status message..." />
+            <button id="update-msg-btn">Update</button>
+        </div>
+        <div id="distress-list-container">
+            <h3>Distress Calls</h3>
+            <ul id="distress-list"></ul>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
