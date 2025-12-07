@@ -1,0 +1,173 @@
+:root {
+    --bg-dark: #121212;
+    --surface-dark: #1e1e1e;
+    --primary: #bb86fc;
+    --secondary: #03dac6;
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --glass: rgba(30, 30, 30, 0.8);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    overflow: hidden;
+}
+
+.hidden {
+    display: none !important;
+}
+
+#attribution {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 2000;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    color: #333;
+    pointer-events: none;
+}
+
+#login-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f0f2f5;
+}
+
+.login-box {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    color: #333;
+}
+
+.login-box input {
+    display: block;
+    width: 100%;
+    margin: 10px 0;
+    padding: 10px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.login-box button {
+    width: 100%;
+    padding: 10px;
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 5px;
+    font-weight: bold;
+}
+
+#app-screen {
+    position: relative;
+    height: 100vh;
+    width: 100vw;
+}
+
+#map {
+    height: 100%;
+    width: 100%;
+}
+
+#controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    display: flex;
+    gap: 5px;
+}
+
+#controls input {
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+#controls button {
+    padding: 5px 10px;
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+#distress-list-container {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    width: 300px;
+    max-height: 40vh;
+    background: white;
+    z-index: 1000;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#distress-list-container h3 {
+    margin: 0;
+    padding: 10px;
+    background: #ff4444;
+    color: white;
+    text-align: center;
+}
+
+#distress-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+}
+
+.distress-item {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    color: #333;
+}
+
+.distress-item:hover {
+    background-color: #f9f9f9;
+}
+
+.distress-item strong {
+    display: block;
+    color: #333;
+}
+
+.distress-item span {
+    font-size: 0.9em;
+    color: #666;
+}
+
+/* Move Leaflet zoom controls below attribution */
+.leaflet-top.leaflet-left {
+    top: 50px !important;
+}

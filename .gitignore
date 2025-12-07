@@ -1,0 +1,4 @@
+node_modules/
+social_app.db
+*.log
+.DS_Store
